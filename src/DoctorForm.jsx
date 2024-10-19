@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaEdit, FaTrashAlt, FaMapMarkerAlt, FaCalendarAlt } from 'react-icons/fa';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -53,6 +53,7 @@ const DoctorForm = () => {
     const [selectedPosition, setSelectedPosition] = useState(null);
     const [viewingLocation, setViewingLocation] = useState(false);
     const [filterText, setFilterText] = useState('');
+    const dateInputRef = useRef(null); // Referencia para el input de la fecha
 
     useEffect(() => {
         fetchDoctors();
@@ -187,6 +188,13 @@ const DoctorForm = () => {
         doc.email.toLowerCase().includes(filterText.toLowerCase())
     );
 
+    // Función para abrir el calendario al hacer clic en el icono
+    const openDatePicker = () => {
+        if (dateInputRef.current) {
+            dateInputRef.current.showPicker(); // Abre el picker del navegador
+        }
+    };
+
     return (
         <div>
             <form onSubmit={handleSubmit} className="doctor-form">
@@ -217,8 +225,9 @@ const DoctorForm = () => {
                             onChange={handleChange}
                             value={doctor.birthDate}
                             className="form-input"
+                            ref={dateInputRef} // Referencia para el input de fecha
                         />
-                        <FaCalendarAlt className="calendar-icon" />
+                        <FaCalendarAlt className="calendar-icon" onClick={openDatePicker} /> {/* Icono clickeable */}
                     </div>
                     <input
                         type="text"
