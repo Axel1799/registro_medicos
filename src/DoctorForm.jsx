@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaEdit, FaTrashAlt, FaMapMarkerAlt, FaCalendarAlt } from 'react-icons/fa';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -47,11 +47,12 @@ const DoctorForm = () => {
     const [doctors, setDoctors] = useState([]);
     const [editingDoctorId, setEditingDoctorId] = useState(null);
     const [modalIsOpen, setModalIsOpen] = useState(false);
+    const [deleteModalIsOpen, setDeleteModalIsOpen] = useState(false);
+    const [doctorToDelete, setDoctorToDelete] = useState(null);
     const [mapPosition, setMapPosition] = useState(null);
     const [selectedPosition, setSelectedPosition] = useState(null);
     const [viewingLocation, setViewingLocation] = useState(false);
     const [filterText, setFilterText] = useState('');
-    const dateInputRef = useRef(null); // Referencia para el campo de fecha
 
     useEffect(() => {
         fetchDoctors();
@@ -90,16 +91,15 @@ const DoctorForm = () => {
         setSelectedPosition({ lat: doctor.latitude, lng: doctor.longitude });
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('¿Realmente quieres borrar este médico?')) {
-            try {
-                await fetch(`http://localhost:5000/api/doctors/${id}`, {
-                    method: 'DELETE',
-                });
-                fetchDoctors();
-            } catch (error) {
-                console.error('Error deleting doctor:', error);
-            }
+    const handleDelete = async () => {
+        try {
+            await fetch(`http://localhost:5000/api/doctors/${doctorToDelete}`, {
+                method: 'DELETE',
+            });
+            fetchDoctors();
+            closeDeleteModal();
+        } catch (error) {
+            console.error('Error deleting doctor:', error);
         }
     };
 
@@ -164,6 +164,16 @@ const DoctorForm = () => {
         setModalIsOpen(false);
     };
 
+    const openDeleteModal = (id) => {
+        setDoctorToDelete(id);
+        setDeleteModalIsOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+        setDeleteModalIsOpen(false);
+        setDoctorToDelete(null);
+    };
+
     const handleMapSelect = () => {
         if (selectedPosition) {
             setDoctor({ ...doctor, latitude: selectedPosition.lat, longitude: selectedPosition.lng });
@@ -171,19 +181,11 @@ const DoctorForm = () => {
         closeMapModal();
     };
 
-    // Filtro para el buscador avanzado
     const filteredDoctors = doctors.filter((doc) =>
         doc.first_name.toLowerCase().includes(filterText.toLowerCase()) ||
         doc.last_name.toLowerCase().includes(filterText.toLowerCase()) ||
         doc.email.toLowerCase().includes(filterText.toLowerCase())
     );
-
-    // Función para activar el calendario al hacer clic en el ícono
-    const openCalendar = () => {
-        if (dateInputRef.current) {
-            dateInputRef.current.showPicker(); // Abrir el calendario nativo del navegador
-        }
-    };
 
     return (
         <div>
@@ -215,9 +217,8 @@ const DoctorForm = () => {
                             onChange={handleChange}
                             value={doctor.birthDate}
                             className="form-input"
-                            ref={dateInputRef} // Referencia al input de fecha
                         />
-                        <FaCalendarAlt className="calendar-icon" onClick={openCalendar} />
+                        <FaCalendarAlt className="calendar-icon" />
                     </div>
                     <input
                         type="text"
@@ -325,7 +326,7 @@ const DoctorForm = () => {
                                 <button onClick={() => handleEdit(doc)} className="icon-button">
                                     <FaEdit />
                                 </button>
-                                <button onClick={() => handleDelete(doc.id)} className="icon-button">
+                                <button onClick={() => openDeleteModal(doc.id)} className="icon-button">
                                     <FaTrashAlt />
                                 </button>
                             </td>
@@ -334,6 +335,16 @@ const DoctorForm = () => {
                 </tbody>
             </table>
 
+            {/* Modal para la eliminación */}
+            <Modal isOpen={deleteModalIsOpen} onRequestClose={closeDeleteModal} className="modal-content">
+                <h3>¿Está seguro de eliminar los datos de este médico?</h3>
+                <div className="modal-actions">
+                    <button onClick={handleDelete} className="modal-delete-button">Sí, eliminar</button>
+                    <button onClick={closeDeleteModal} className="modal-cancel-button">Cancelar</button>
+                </div>
+            </Modal>
+
+            {/* Modal para la selección de ubicación */}
             <Modal isOpen={modalIsOpen} onRequestClose={closeMapModal} className="modal-content">
                 {viewingLocation ? (
                     <>
